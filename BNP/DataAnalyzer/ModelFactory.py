@@ -35,7 +35,6 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
-from Cython.Shadow import NULL
 
 class ModelFactory(object):
     '''
