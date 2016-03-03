@@ -62,6 +62,8 @@ if __name__ == '__main__':
             if tmp_len>0:
                 test.loc[test_series.isnull(), test_name] = -9999 #train_series.mean()  #TODO
     
+    log("start training...")
+    exit()
     X_train = train
     X_test = test
     
@@ -83,4 +85,5 @@ if __name__ == '__main__':
     #print y_pred
     
     pd.DataFrame({"ID": id_test, "PredictedProb": y_pred[:,1]}).to_csv('extra_trees.csv',index=False)
+    musicAlarm()
         

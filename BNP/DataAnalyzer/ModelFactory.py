@@ -363,7 +363,7 @@ class ModelFactory(object):
                           "bootstrap": [True, True],
                           "criterion": ["gini", "entropy"], 
                           "oob_score":[True, True],
-                          "n_estimators" : sp_randint(100, 300),
+                          "n_estimators" : sp_randint(800, 1200),
                           }
             
             clf = self.doRandomSearch(clfName, clf, param_dist, X, Y)
