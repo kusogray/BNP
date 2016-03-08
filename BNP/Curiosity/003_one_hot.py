@@ -30,11 +30,12 @@ import pandas as pd
 from BNP.Bartender.Blender import Blender
 from test._mock_backport import inplace
 import random
+import numpy as np
 
 if __name__ == '__main__':
     
     log('Load data...')
-    expInfo = "002_sample"
+    expInfo = "003_onehot"
     _basePath = Config.FolderBasePath + expInfo + Config.osSep
     trainPath = _basePath + "train.csv"
     testPath = _basePath + "test.csv"
@@ -43,58 +44,73 @@ if __name__ == '__main__':
     dr = DataReader()
     dr.readInCSV(trainPath, "train")
     dr.readInCSV(testPath, "test")
-    dr.doSample(0.0002)
+    #dr.doSample(0.2)
     
     
-    train = dr._trainSampleDf
-    target = dr._ansSampleDf
+    train = dr._trainDataFrame
+    target = dr._ansDataFrame
     test = dr._testDataFrame
     id_test = dr._testIdDf
     
+    mergeDf = train.append(test)
     
-    log('Clearing...')
-    for (train_name, train_series), (test_name, test_series) in zip(train.iteritems(),test.iteritems()):
-        if train_series.dtype == 'O':
-            #for objects: factorize
-            train[train_name], tmp_indexer = pd.factorize(train[train_name])
-            test[test_name] = tmp_indexer.get_indexer(test[test_name])
-            #but now we have -1 values (NaN)
-        else:
-            #for int or float: fill NaN
-            tmp_len = len(train[train_series.isnull()])
-            if tmp_len>0:
-                #print "mean", train_series.mean()
-                train.loc[train_series.isnull(), train_name] = -9999 #train_series.mean()
-            #and Test
-            tmp_len = len(test[test_series.isnull()])
-            if tmp_len>0:
-                test.loc[test_series.isnull(), test_name] = -9999 #train_series.mean()  #TODO
+    log('Pre-Processing...')
+    
+    numTrainDataRows = len(train)
+    categoryThreshold = 50
+    toDropList = []
+    for i in range(0, len(mergeDf.columns)):
+        tmpColName = mergeDf.columns[i]
+        mergeDf[tmpColName] = mergeDf[tmpColName].fillna("-9999")
+        uniqueCnt = len(pd.unique(mergeDf[tmpColName]))
+        
+        if uniqueCnt <= categoryThreshold:
+            toDropList.append(tmpColName)
+            uniqueArr = pd.unique(mergeDf[tmpColName]).tolist()
+            tmpDf = pd.get_dummies(mergeDf[tmpColName], prefix= tmpColName + "_onehot")
+            mergeDf = pd.concat([mergeDf, tmpDf], axis = 1)
+    
+    for tmpName in toDropList:
+        mergeDf = mergeDf.drop(tmpName,axis=1)        
+            
+    train = mergeDf.iloc[0:numTrainDataRows]    
+    test =  mergeDf.iloc[numTrainDataRows:]  
+    
+    X = train
+    Y = target
+    
+    X.to_csv(_basePath+"full_train.csv")
+    test.to_csv(_basePath + "full_test.csv")
+    
+    samplePercent = 0.2
+    sampleRows = np.random.choice(X.index, len(X)*samplePercent) 
+    train_sample  =  X.ix[sampleRows]
+    ans_sample = Y.ix[sampleRows]
+    
+    train_sample.to_csv(_basePath+"sample_train.csv")
     
     log("start training...")
-    
-    X_train = train
-    X_test = test
     
     
     fab = ModelFactory()
     fab._gridSearchFlag = True
-    fab._singleModelMail = False
+    fab._singleModelMail = True
     fab._subFolderName = expInfo
-    fab._n_iter_search = 1
+    fab._n_iter_search = 20
     fab._expInfo = expInfo
-    clf = fab.getExtraTressClf(train, target)
+    clf = fab.getExtraTressClf(train_sample, ans_sample)
     bestParam= fab._lastRandomSearchBestParam
     
     
     fab = ModelFactory()
     fab._gridSearchFlag = False
     fab._singleModelMail = True
-    clf = fab.getExtraTressClf(dr._trainDataFrame, dr._ansDataFrame, bestParam)
+    clf = fab.getExtraTressClf(train, target, bestParam)
     
     
     
     log('Predict...')
-    y_pred = clf.predict_proba(X_test)
+    y_pred = clf.predict_proba(test)
     
     pd.DataFrame({"ID": id_test, "PredictedProb": y_pred[:,1]}).to_csv(outputPath,index=False)
     musicAlarm()

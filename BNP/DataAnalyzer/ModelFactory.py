@@ -55,6 +55,8 @@ class ModelFactory(object):
     _basicClf = {}  # when self._gridSearchFlag is True, basic = best  
     _mvpClf = []
     
+    _lastRandomSearchBestParam =[]
+    
     
     def __init__(self):
         '''
@@ -146,17 +148,19 @@ class ModelFactory(object):
         self._bestLoglossDict[clfName] = self.getLogloss(self._bestClf[clfName], X, Y)
         self.report(random_search.grid_scores_, clfName, self._bestLoglossDict[clfName])
         
-        dumpModel(random_search.best_estimator_, clfName, self._expInfo, self._subFolderName)
+        random_search.best_params_
         
-            
+        dumpModel(random_search.best_estimator_, clfName, self._expInfo, self._subFolderName)
+        self._lastRandomSearchBestParam = random_search.best_params_
+        
         return random_search.best_estimator_
     
     # # 1. Random Forest
-    def getRandomForestClf(self, X, Y):
+    def getRandomForestClf(self, X, Y, param_list):
         clfName = "Random_Forest"
         ## http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
         clf = rf(n_estimators=300, max_depth=None, min_samples_split=1, random_state=0, bootstrap=True, oob_score = True)
-        
+            
         if self._gridSearchFlag == True:
             log(clfName + " start searching param...")
             tmpLowDepth = 10
@@ -173,7 +177,13 @@ class ModelFactory(object):
                           }
             
             clf = self.doRandomSearch(clfName, clf, param_dist, X, Y)
-            
+        
+        else:    
+
+            if param_list != -1:
+                clf = ExtraTreesClassifier(param_list)
+                clf.set_params(**param_list)
+            clf.fit(X,Y)    
             
         return clf
     
@@ -329,26 +339,27 @@ class ModelFactory(object):
             mail("Xgboost Done" ,"Native Xgboost best score : " + str( bestScore) + ", param list: " + str( paramList) + "best_num_round: ", best_num_round)
         
     # # 3.Extra Trees
-    def getExtraTressClf(self, X, Y):
+    def getExtraTressClf(self, X, Y, param_list=-1):
         clfName = "Extra_Trees"
         
         ## http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesClassifier.html
         clf = ExtraTreesClassifier(
-                                n_estimators=10, 
-                                criterion='gini', 
-                                max_depth=None, 
-                                min_samples_split=2, 
-                                min_samples_leaf=1, 
-                                min_weight_fraction_leaf=0.0, 
-                                max_features='auto', 
-                                max_leaf_nodes=None, 
-                                bootstrap=False, 
-                                oob_score=False, 
-                                n_jobs=1, 
-                                random_state=None, 
-                                verbose=0, 
-                                warm_start=False, 
-                                class_weight=None)
+                                    n_estimators=10, 
+                                    criterion='gini', 
+                                    max_depth=None, 
+                                    min_samples_split=2, 
+                                    min_samples_leaf=1, 
+                                    min_weight_fraction_leaf=0.0, 
+                                    max_features='auto', 
+                                    max_leaf_nodes=None, 
+                                    bootstrap=False, 
+                                    oob_score=False, 
+                                    n_jobs=1, 
+                                    random_state=None, 
+                                    verbose=0, 
+                                    warm_start=False, 
+                                    class_weight=None)
+        
         
         if self._gridSearchFlag == True:
             log(clfName + " start searching param...")
@@ -367,7 +378,13 @@ class ModelFactory(object):
                           }
             
             clf = self.doRandomSearch(clfName, clf, param_dist, X, Y)
-            
+        else:    
+
+            if param_list != -1:
+                clf = ExtraTreesClassifier(param_list)
+                clf.set_params(**param_list)
+            clf.fit(X,Y)
+        
         return clf
     
     

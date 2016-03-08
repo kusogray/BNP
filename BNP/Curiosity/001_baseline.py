@@ -67,8 +67,6 @@ if __name__ == '__main__':
     X_train = train
     X_test = test
     
-    train.to_csv(_basePath+"train_after",index=False)
-    exit()
     
     fab = ModelFactory()
     fab._gridSearchFlag = True
