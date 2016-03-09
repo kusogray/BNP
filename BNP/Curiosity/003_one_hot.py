@@ -59,6 +59,8 @@ if __name__ == '__main__':
     numTrainDataRows = len(train)
     categoryThreshold = 50
     toDropList = []
+    
+    
     for i in range(0, len(mergeDf.columns)):
         tmpColName = mergeDf.columns[i]
         mergeDf[tmpColName] = mergeDf[tmpColName].fillna("-9999")
@@ -70,6 +72,11 @@ if __name__ == '__main__':
             tmpDf = pd.get_dummies(mergeDf[tmpColName], prefix= tmpColName + "_onehot")
             mergeDf = pd.concat([mergeDf, tmpDf], axis = 1)
     
+        else:
+            replaceStr = str(mergeDf.iloc[0][tmpColName]).replace(".","").replace("-","")
+            if not replaceStr.isdigit():
+                mergeDf[tmpColName]  = pd.factorize(mergeDf[tmpColName])[0]
+                
     for tmpName in toDropList:
         mergeDf = mergeDf.drop(tmpName,axis=1)        
             
