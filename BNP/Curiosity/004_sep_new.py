@@ -82,7 +82,7 @@ if __name__ == '__main__':
     
     # Close opend file
     fo.close()
-    exit()
+    #exit()
 
     train = train.iloc[np.asarray(selectedRowList)]
     target = target.iloc[np.asarray(selectedRowList)]
