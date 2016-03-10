@@ -80,6 +80,14 @@ if __name__ == '__main__':
                 
     for tmpName in toDropList:
         mergeDf = mergeDf.drop(tmpName,axis=1)        
+        
+    for i in range(0, len(mergeDf.columns)):
+        if str(mergeDf[mergeDf.columns[i]].dtype()) =="float64":
+            mergeDf[mergeDf.columns[i]]  = mergeDf[mergeDf.columns[i]].astype("float32")  
+        elif str(mergeDf[mergeDf.columns[i]].dtype()) =="int32":
+            mergeDf[mergeDf.columns[i]]  = mergeDf[mergeDf.columns[i]].astype("int16")  
+        elif str(mergeDf[mergeDf.columns[i]].dtype()) =="object":
+            mergeDf[mergeDf.columns[i]]  = mergeDf[mergeDf.columns[i]].astype("float32")  
             
     train = mergeDf.iloc[0:numTrainDataRows]    
     test =  mergeDf.iloc[numTrainDataRows:]  
