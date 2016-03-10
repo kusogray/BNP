@@ -203,7 +203,7 @@ class ModelFactory(object):
         else:
             objective = "multi:softprob"
         
-        num_round = 500
+        num_round = 120
         param = {'bst:max_depth':74, 
                  'bst:eta':0.05, 
                  'silent':1, 
@@ -264,7 +264,7 @@ class ModelFactory(object):
             
             param['eta'] = random.uniform(0.15, 0.45)
             param['gamma'] = randint(0,3)
-            param['max_depth'] = randint(80,120)
+            param['max_depth'] = randint(8,20)
             param['min_child_weight'] = randint(1,3)
             param['eval_metric'] = 'mlogloss'
             param['max_delta_step'] = randint(1,10)
@@ -278,11 +278,6 @@ class ModelFactory(object):
             plst = param.items()
         
             
-            evalDataPercentage = 0.2
-            
-            sampleRows = np.random.choice(X.index, len(X)*evalDataPercentage) 
-            
-            sampleAnsDf = Y.ix[sampleRows]
             ori_X = X
             ori_Y = Y
             #dtest  = xgb.DMatrix( X.ix[sampleRows], label=sampleAnsDf)
@@ -291,7 +286,7 @@ class ModelFactory(object):
             
             dtrain  =  xgb.DMatrix( X, label=Y)
             
-            xgbCvResult =  xgb.cv(plst, dtrain, num_boost_round= num_round,  nfold=4)
+            xgbCvResult =  xgb.cv(plst, dtrain, num_boost_round= num_round,  nfold=3)
             scoreList = xgbCvResult[xgbCvResult.columns[0]].tolist()
             new_num_round = scoreList.index(min(scoreList)) + 1 
             minScore = scoreList[new_num_round-1]
@@ -312,21 +307,6 @@ class ModelFactory(object):
                 best_num_round = new_num_round
                 joblib.dump(bst, Config.xgboostBestTmpCflPath)
                 
-                
-                expNo = "024"
-                expInfo = expNo + "_overfitting" 
-                _basePath = Config.FolderBasePath + expInfo + Config.osSep
-                modelFolder = _basePath + "models" + Config.osSep + "overfitting" + Config.osSep
-
-                testPath = _basePath + "test_2.csv"
-                dr = DataReader()
-                newX = dr.cvtPathListToDfList(testPath, "test")
-                curModel = "Xgboost"
-       
-                modelPath =  modelFolder + str(getMatchNameModelPath(modelFolder, curModel))
-                tmpOutPath = "F:\\test_ismail_ans.csv"
-                outDf = pd.DataFrame(bst.predict_proba(newX))
-                outDf.to_csv(tmpOutPath, sep=',', encoding='utf-8')
                 
         
         self.genXgboostRpt(bestClf, bestScore, paramList, best_num_round)
