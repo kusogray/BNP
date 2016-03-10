@@ -52,8 +52,17 @@ if __name__ == '__main__':
     target = dr._ansDataFrame
     test = dr._testDataFrame
     id_test = dr._testIdDf
+#     
+#     evalDataPercentage = 0.0005
+#             
+#     sampleRows = np.random.choice(train.index, len(train)*evalDataPercentage) 
+#     
+#     train = train.ix[sampleRows]
+#     target = target.ix[sampleRows]
+            
     
     mergeDf = train.append(test)
+
     
     log('Pre-Processing...')
     
@@ -82,11 +91,11 @@ if __name__ == '__main__':
         mergeDf = mergeDf.drop(tmpName,axis=1)        
         
     for i in range(0, len(mergeDf.columns)):
-        if str(mergeDf[mergeDf.columns[i]].dtype()) =="float64":
+        if str(mergeDf[mergeDf.columns[i]].dtype) =="float64":
             mergeDf[mergeDf.columns[i]]  = mergeDf[mergeDf.columns[i]].astype("float32")  
-        elif str(mergeDf[mergeDf.columns[i]].dtype()) =="int32":
+        elif str(mergeDf[mergeDf.columns[i]].dtype) =="int32":
             mergeDf[mergeDf.columns[i]]  = mergeDf[mergeDf.columns[i]].astype("int16")  
-        elif str(mergeDf[mergeDf.columns[i]].dtype()) =="object":
+        elif str(mergeDf[mergeDf.columns[i]].dtype) =="object":
             mergeDf[mergeDf.columns[i]]  = mergeDf[mergeDf.columns[i]].astype("float32")  
             
     train = mergeDf.iloc[0:numTrainDataRows]    
@@ -95,7 +104,9 @@ if __name__ == '__main__':
     X = train
     Y = target
     
-    
+    X.to_csv("F:\\train.csv")
+    Y.to_csv("F:\\target.csv")
+    test.to_csv("F:\\test.csv")
     
     log("start training...")
     
@@ -112,7 +123,7 @@ if __name__ == '__main__':
     
     log('Predict...')
     y_pred = clf.predict(xgb.DMatrix(test))
-    
-    pd.DataFrame({"ID": id_test, "PredictedProb": y_pred[:,1]}).to_csv(outputPath,index=False)
+    log(y_pred)
+    pd.DataFrame({"ID": id_test, "PredictedProb": y_pred}).to_csv(outputPath,index=False)
     musicAlarm()
         

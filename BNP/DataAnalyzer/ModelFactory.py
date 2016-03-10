@@ -262,15 +262,15 @@ class ModelFactory(object):
             param = {}
             param['nthread'] = 4
             
-            param['eta'] = random.uniform(0.15, 0.45)
+            param['eta'] = random.uniform(0.1, 0.56)
             param['gamma'] = randint(0,3)
-            param['max_depth'] = randint(8,20)
+            param['max_depth'] = randint(8,23)
             param['min_child_weight'] = randint(1,3)
-            param['eval_metric'] = 'mlogloss'
+            param['eval_metric'] = 'logloss'
             param['max_delta_step'] = randint(1,10)
             param['objective'] = objective
-            param['subsample'] = random.uniform(0.35, 0.75)
-            param['num_class'] = num_class 
+            param['subsample'] = random.uniform(0.2, 0.9)
+            param['num_class'] = 1 
             param['silent'] = 1
             param['alpha'] = 1
             param['lambda'] = 1
@@ -278,18 +278,31 @@ class ModelFactory(object):
             plst = param.items()
         
             
+            evalDataPercentage = 0.35
+            
+            sampleRows = np.random.choice(X.index, len(X)*evalDataPercentage) 
+            
+            sampleAnsDf = Y.ix[sampleRows]
+            
             ori_X = X
             ori_Y = Y
-            #dtest  = xgb.DMatrix( X.ix[sampleRows], label=sampleAnsDf)
-            #dtrain  =  xgb.DMatrix( X.drop(sampleRows), label=Y.drop(sampleRows))
-            #evallist  = [(dtest,'eval'), (dtrain,'train')]
+            dEval  = xgb.DMatrix( X.ix[sampleRows], label=sampleAnsDf)
+            dTrain  =  xgb.DMatrix( X.drop(sampleRows), label=Y.drop(sampleRows))
+            evallist  = [(dEval,'eval'), (dTrain,'train')]
             
-            dtrain  =  xgb.DMatrix( X, label=Y)
+            #dtrain  =  xgb.DMatrix( X, label=Y)
             
-            xgbCvResult =  xgb.cv(plst, dtrain, num_boost_round= num_round,  nfold=3)
-            scoreList = xgbCvResult[xgbCvResult.columns[0]].tolist()
-            new_num_round = scoreList.index(min(scoreList)) + 1 
-            minScore = scoreList[new_num_round-1]
+            #xgb.cv
+            #xgbCvResult =  xgb.cv(plst, dtrain, num_boost_round= num_round,  nfold=3)
+            #scoreList = xgbCvResult[xgbCvResult.columns[0]].tolist()
+            #new_num_round = scoreList.index(min(scoreList)) + 1 
+            #minScore = scoreList[new_num_round-1]
+            
+            #xgb.train
+            bst = xgb.train(plst, dTrain, num_round, evallist)
+            new_num_round, minScore = self.getBestXgboostEvalScore(bst.bst_eval_set_score_list)
+            
+            
             
             tmpScore = minScore
             if  tmpScore < bestScore:
