@@ -28,10 +28,9 @@ from BNP.util.ModelUtils import getMatchNameModelPath
 from BNP.util.ModelUtils import deleteModelFiles
 import pandas as pd
 from BNP.Bartender.Blender import Blender
-from test._mock_backport import inplace
 import random
 import numpy as np
-import pickle
+import xgboost as xgb
 
 
 if __name__ == '__main__':
@@ -54,14 +53,19 @@ if __name__ == '__main__':
     target = dr._ansDataFrame
     test = dr._testDataFrame
     id_test = dr._testIdDf
+    numTrainDataRows = len(train)
+    
+    
+    log('Label v1~v9 non empty...')
     
     selectedRowList =[]
+    selectedTestRowList =[]
     for i in range(0, len(train["v1"])):
         isNan1 = str(train.iloc[i]["v1"]) =="nan"
         isNan2 = str(train.iloc[i]["v2"]) =="nan"
         isNan4 = str(train.iloc[i]["v4"]) =="nan"
         isNan5 = str(train.iloc[i]["v5"]) =="nan"
-        isNan6 = str(train.iloc[i]["v6"]) =="nan"
+        isNan6 = str(train.iloc[i]["v6"]) =="nan" 
         isNan7 = str(train.iloc[i]["v7"]) =="nan"
         isNan8 = str(train.iloc[i]["v8"]) =="nan"
         isNan9 = str(train.iloc[i]["v9"]) =="nan"
@@ -72,67 +76,74 @@ if __name__ == '__main__':
             selectedRowList.append(i)
     
     
+    for i in range(0, len(test["v1"])):
+        isNan1 = str(test.iloc[i]["v1"]) =="nan"
+        isNan2 = str(test.iloc[i]["v2"]) =="nan"
+        isNan4 = str(test.iloc[i]["v4"]) =="nan"
+        isNan5 = str(test.iloc[i]["v5"]) =="nan"
+        isNan6 = str(test.iloc[i]["v6"]) =="nan" 
+        isNan7 = str(test.iloc[i]["v7"]) =="nan"
+        isNan8 = str(test.iloc[i]["v8"]) =="nan"
+        isNan9 = str(test.iloc[i]["v9"]) =="nan"
+        
+        
+        if  isNan1 == False and isNan2 == False and isNan4 == False and isNan5 == False and \
+            isNan6 == False and isNan7 == False and isNan8 == False and isNan9 == False : 
+            selectedTestRowList.append(i)
+            
     # Open a file
-    fo = open("F:\\selectedRow.txt", "w+")
-    
-    # Write sequence of lines at the end of the file.
-    for tmpStr in selectedRowList:
-        line = fo.writelines( str(tmpStr) )
-        fo.writelines( "\n" )
-    
-    # Close opend file
-    fo.close()
-    #exit()
+#     fo = open("F:\\selectedRow.txt", "w+")
+#     
+#     # Write sequence of lines at the end of the file.
+#     for tmpStr in selectedRowList:
+#         line = fo.writelines( str(tmpStr) )
+#         fo.writelines( "\n" )
+#     
+#     # Close opend file
+#     fo.close()
 
-    train = train.iloc[np.asarray(selectedRowList)]
-    target = target.iloc[np.asarray(selectedRowList)]
     
     mergeDf = train.append(test)
     
-    log('Pre-Processing...')
-    
-    numTrainDataRows = len(train)
-    categoryThreshold = 50
-    toDropList = []
     
     
-    
+    log('Fill With Mode or Median...')
     
     for i in range(0, len(mergeDf.columns)):
         tmpColName = mergeDf.columns[i]
-        mergeDf[tmpColName] = mergeDf[tmpColName].fillna("-9999")
-        uniqueCnt = len(pd.unique(mergeDf[tmpColName]))
-        
-        if uniqueCnt <= categoryThreshold:
-            toDropList.append(tmpColName)
-            uniqueArr = pd.unique(mergeDf[tmpColName]).tolist()
-            tmpDf = pd.get_dummies(mergeDf[tmpColName], prefix= tmpColName + "_onehot")
-            mergeDf = pd.concat([mergeDf, tmpDf], axis = 1)
-    
+        if str(mergeDf[mergeDf.columns[i]].dtype) =="float64":
+            mergeDf[tmpColName] = mergeDf[tmpColName].fillna(mergeDf[tmpColName].median())    
+        elif str(mergeDf[tmpColName].dtype) =="object":
+            mergeDf[tmpColName] = mergeDf[tmpColName].fillna(train[tmpColName].mode()[0])
         else:
-            replaceStr = str(mergeDf.iloc[0][tmpColName]).replace(".","").replace("-","")
-            if not replaceStr.isdigit():
-                mergeDf[tmpColName]  = pd.factorize(mergeDf[tmpColName])[0]
-                
-    for tmpName in toDropList:
-        mergeDf = mergeDf.drop(tmpName,axis=1)        
+            mergeDf[tmpColName] = mergeDf[tmpColName].fillna(mergeDf[tmpColName].mode())
+    
+    log("Changing format...")
+    
+    for i in range(0, len(mergeDf.columns)):
+        if str(mergeDf[mergeDf.columns[i]].dtype) =="float64":
+            mergeDf[mergeDf.columns[i]]  = mergeDf[mergeDf.columns[i]].astype("float32")  
+        elif str(mergeDf[mergeDf.columns[i]].dtype) =="int32":
+            mergeDf[mergeDf.columns[i]]  = mergeDf[mergeDf.columns[i]].astype("int16")  
+        elif str(mergeDf[mergeDf.columns[i]].dtype) =="object":
+            mergeDf[mergeDf.columns[i]]  = pd.factorize(mergeDf[mergeDf.columns[i]])[0]
+            mergeDf[mergeDf.columns[i]]  = mergeDf[mergeDf.columns[i]].astype("float32")  
+    
+    
+    log("Split...")
             
     train = mergeDf.iloc[0:numTrainDataRows]    
     test =  mergeDf.iloc[numTrainDataRows:]  
     
-    X = train
-    Y = target
+    train_1 = train.iloc[np.asarray(selectedRowList)]
+    target_1 = target.iloc[np.asarray(selectedRowList)]         
     
-    X.to_csv(_basePath+"full_train.csv")
-    test.to_csv(_basePath + "full_test.csv")
+    train_2 = train.drop(np.asarray(selectedRowList))
+    target_2 = target.drop(np.asarray(selectedRowList))         
     
-    samplePercent = 0.3
-    sampleRows = np.random.choice(X.index, len(X)*samplePercent) 
-    train_sample  =  X.ix[sampleRows]
-    ans_sample = Y.ix[sampleRows]
-    log("sample len: ", len(train_sample[train_sample.columns[0]]))
+    X = train_1
+    Y = target_1
     
-    train_sample.to_csv(_basePath+"sample_train.csv")
     
     log("start training...")
     
@@ -141,22 +152,36 @@ if __name__ == '__main__':
     fab._gridSearchFlag = True
     fab._singleModelMail = True
     fab._subFolderName = expInfo
-    fab._n_iter_search = 20
+    fab._n_iter_search = 1
     fab._expInfo = expInfo
-    clf = fab.getExtraTressClf(train_sample, ans_sample)
-    bestParam= fab._lastRandomSearchBestParam
+    clf_1 = fab.getXgboostClf(train_1, target_1)
     
     
-    fab = ModelFactory()
-    fab._gridSearchFlag = False
-    fab._singleModelMail = True
-    clf = fab.getExtraTressClf(train, target, bestParam)
+    fab2 = ModelFactory()
+    fab2._gridSearchFlag = True
+    fab2._singleModelMail = True
+    fab2._subFolderName = expInfo
+    fab2._n_iter_search = 1
+    fab2._expInfo = expInfo
+    clf_2 = fab2.getXgboostClf(train_2, target_2)
     
-    
+    train_1.to_csv(_basePath +"train1.csv")
+    train_2.to_csv(_basePath +"train2.csv")
+    test.to_csv(_basePath +"full_test.csv")
     
     log('Predict...')
-    y_pred = clf.predict_proba(test)
+    y_pred = []
+    ans_1 = pd.DataFrame(clf_1.predict(xgb.DMatrix(test)))
+    ans_2 = pd.DataFrame(clf_2.predict(xgb.DMatrix(test)))
     
-    pd.DataFrame({"ID": id_test, "PredictedProb": y_pred[:,1]}).to_csv(outputPath,index=False)
+    for i in range(0, len(test["v1"])):
+        if i in selectedTestRowList:
+            y_pred.append(ans_1.iloc[i][0])
+        else:
+            y_pred.append(ans_2.iloc[i][0])
+        
+    #y_pred = pd.DataFrame(y_pred)
+    log(y_pred)
+    pd.DataFrame({"ID": id_test, "PredictedProb": y_pred}).to_csv(outputPath,index=False)
     musicAlarm()
         
