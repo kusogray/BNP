@@ -264,7 +264,7 @@ class ModelFactory(object):
             
             param['eta'] = random.uniform(0.1, 0.56)
             param['gamma'] = randint(0,3)
-            param['max_depth'] = randint(8,23)
+            param['max_depth'] = randint(8,25)
             param['min_child_weight'] = randint(1,3)
             param['eval_metric'] = 'logloss'
             param['max_delta_step'] = randint(1,10)
