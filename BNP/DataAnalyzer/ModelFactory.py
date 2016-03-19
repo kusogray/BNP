@@ -163,8 +163,8 @@ class ModelFactory(object):
             
         if self._gridSearchFlag == True:
             log(clfName + " start searching param...")
-            tmpLowDepth = 10
-            tmpHighDepth = 50
+            tmpLowDepth = 8
+            tmpHighDepth = 30
             
             
             param_dist = {
@@ -173,15 +173,15 @@ class ModelFactory(object):
                           "min_samples_split": sp_randint(1, 11),
                           "min_samples_leaf": sp_randint(1, 11),
                           "criterion": ["gini", "entropy"], 
-                          "n_estimators" : sp_randint(100, 300),
+                          "n_estimators" : sp_randint(5, 12),
                           }
             
             clf = self.doRandomSearch(clfName, clf, param_dist, X, Y)
         
         else:    
 
-            if param_list != -1:
-                clf = ExtraTreesClassifier(param_list)
+            if not param_list is None:
+                clf = rf()
                 clf.set_params(**param_list)
             clf.fit(X,Y)    
             

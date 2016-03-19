@@ -21,10 +21,18 @@ from test._mock_backport import inplace
 import random
 import scipy as sp
 import numpy as np
-
+from BNP.util.ModelUtils import calLogLoss
 
 if __name__ == '__main__':
     
+    
+    ans=[0,1,1]
+    data= [[0.2, 0.8],[0.2, 0.8],[0.2, 0.8]]
+    columns = ['0','1']
+    y_pred = pd.DataFrame(data, columns=columns)
+    log(calLogLoss(pd.DataFrame(y_pred), np.array(ans)))
+    musicAlarm()
+    exit()
     
    # 1. read in data
     expNo = "015"

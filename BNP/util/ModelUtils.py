@@ -70,7 +70,6 @@ def calLogLoss(inputDf, _ansDf):
         tmp = -1.0 / float(N)
         
         tmpSum = 0.0
-        #tmpLowProbIdList = []
         _ansDf = _ansDf.tolist()
         for i in range(0, N):
             tmpAns = _ansDf[i]

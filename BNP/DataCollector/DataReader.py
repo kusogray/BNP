@@ -12,7 +12,7 @@ class DataReader(object):
     '''
     classdocs
     '''
-    _trainDataFrame, _testDataFrame, _ansDataFrame = [],[],[]
+    _trainDataFrame, _testDataFrame, _ansDataFrame, _idDataFrame = [],[],[],[]
     
     _trainSampleDf, _trainRestDf = [], []
     _ansSampleDf, _ansRestDf = [], []
@@ -28,6 +28,7 @@ class DataReader(object):
         df = pd.read_csv(path, header=0, sep=',')
         log("loading csv: " + path)
         if mode.lower() == "train":
+            self._idDataFrame = df[df.columns[0]]
             self._ansDataFrame = df[df.columns[1]]
             self._trainDataFrame = df[df.columns[2:]]
         else:
