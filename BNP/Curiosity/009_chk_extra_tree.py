@@ -53,17 +53,17 @@ if __name__ == '__main__':
     dr.readInCSV(testPath, "test")
     
     
-    testLen = 8000
+    testLen = 800
     train = dr._trainDataFrame
     target = dr._ansDataFrame
     test = dr._testDataFrame
-    id_test = dr._idDataFrame
+    id_test = dr._testIdDf
     
-    train = dr._trainDataFrame[:testLen]
-    target = dr._ansDataFrame[:testLen]
-    test = dr._testDataFrame[:testLen]
-    id_test = dr._idDataFrame[:testLen]
-    
+#     train = dr._trainDataFrame[:testLen]
+#     target = dr._ansDataFrame[:testLen]
+#     test = dr._testDataFrame[:testLen]
+#     id_test = dr._idDataFrame[:testLen]
+#     
     numTrainDataRows = len(train)
     
     
@@ -95,42 +95,36 @@ if __name__ == '__main__':
                 
                 
     extc = ExtraTreesClassifier(n_estimators=850,max_features= 60,criterion= 'entropy',min_samples_split= 4,
-                                max_depth= 40, min_samples_leaf= 2, n_jobs = 3)    
+                                 max_depth= 40, min_samples_leaf= 2, n_jobs = 3)    
+#     
+#     scores = cross_validation.cross_val_score(extc, train, target, cv=4)
+#     log("scores: " , scores)
     
-    scores = cross_validation.cross_val_score(extc, train, target, cv=4)
-    log("scores: " , scores)
     
-    extc2 = ExtraTreesClassifier(n_estimators=850,max_features= 60,criterion= 'entropy',min_samples_split= 4,
-                                max_depth= 40, min_samples_leaf= 2, n_jobs = 3)    
+    #cutPoint = int(len(train)*0.75)
+    X_train = train
+    X_test = test
+    #id_test = id_test[cutPoint:]
     
-#     X_train_split, X_test_split, y_train_split, y_test_split = cross_validation.train_test_split(train, train, test_size=0.25, random_state=0)
-#     extc2.fit(X_train_split,y_train_split) 
-#     new_score = extc2.score(X_test_split, y_test_split) 
-#     log("new_score: " , new_score)
+    #X_target = target[:cutPoint]
+    #ans = target[cutPoint:]
     
-    cutPoint = int(len(train)*0.75)
-    X_train = train[:cutPoint]
-    X_test = test[cutPoint:]
-    id_test = id_test[cutPoint:]
-    
-    X_target = target[:cutPoint]
-    ans = target[cutPoint:]
-    
-    pd.DataFrame(X_test).to_csv(_basePath + "X_test.csv",index=False)
-    pd.DataFrame(ans).to_csv(_basePath + "ans2.csv",index=False)
+    #pd.DataFrame(X_test).to_csv(_basePath + "X_test.csv",index=False)
+    #pd.DataFrame(ans).to_csv(_basePath + "ans2.csv",index=False)
     
     log('Training...')
     log('X_Train len: ', len(X_train))
     
 
-    extc.fit(X_train,X_target) 
+    extc.fit(X_train,target) 
     
     log('Predict...')
     y_pred = extc.predict_proba(X_test)
-    log(calLogLoss(pd.DataFrame(y_pred), ans))
+    #log(calLogLoss(pd.DataFrame(y_pred), ans))
     
-    new_score = extc.score(X_test, ans) 
-    log("new_score: " , new_score)
+    #log("X_test: " , len(X_test), " ans: ", len(ans))
+    #new_score = extc.score(X_test, ans) 
+    #log("new_score: " , new_score)
 
     pd.DataFrame({"ID": id_test, "PredictedProb": y_pred[:,1]}).to_csv(outputPath,index=False)
     musicAlarm()
