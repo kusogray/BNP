@@ -35,6 +35,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
+from ctypes.test import test_sizes
 
 class ModelFactory(object):
     '''
@@ -93,9 +94,22 @@ class ModelFactory(object):
         inputDf = pd.DataFrame(clf.predict_proba(X))
         #print inputDf
         return calLogLoss(inputDf, Y)
-
+    
+    def validation(self, clf, X, Y, test_size):
+        len_x = int(len(X) * (1-test_size))
+        trainX = X[0:len_x]
+        testX = X[len_x:]
+        
+        targetX = Y[0:len_x]
+        testY = Y[len_x:]
+        
+        clf.fit(trainX,targetX)
+        logloss = self.getLogloss(clf, testX, testY)
+        return logloss
+        
+        
     # Utility function to report best scores
-    def report(self, grid_scores, clfName, bestLogLoss, n_top=3):
+    def report(self, grid_scores, clfName, n_top=3):
         top_scores = sorted(grid_scores, key=itemgetter(1), reverse=True)[:n_top]
         bestParameters = {}
         mailContent = ""
@@ -122,12 +136,12 @@ class ModelFactory(object):
                 mailContent += "\n"
                 
             log("")
-        #log (clfName , " best logloss: ", bestLogLoss)
         if (self._singleModelMail == True):
             mail("Single Model Done: ", clfName , ", ", mailContent)
         return bestParameters
     
     
+    def doCustRandomSearch(self, clfName, clf, param_dist, X, Y):
     
         
     def doRandomSearch(self, clfName, clf, param_dist, X, Y):
@@ -139,14 +153,17 @@ class ModelFactory(object):
             multiCores = 1
             
         random_search = RandomizedSearchCV(clf, param_distributions=param_dist,
-                               n_iter=self._n_iter_search, n_jobs=multiCores, scoring='log_loss')
+                               n_iter=self._n_iter_search, n_jobs=multiCores, scoring='log_loss'
+                               ,verbose=10)
         
         
         random_search.fit(X, Y)
         log(clfName + " randomized search cost: " , time.time() - start , " sec")
         self._bestClf[clfName] = random_search.best_estimator_
-        self._bestLoglossDict[clfName] = self.getLogloss(self._bestClf[clfName], X, Y)
-        self.report(random_search.grid_scores_, clfName, self._bestLoglossDict[clfName])
+        #self._bestLoglossDict[clfName] = self.getLogloss(self._bestClf[clfName], X, Y)
+        self._bestLoglossDict[clfName] = self.validation(self._bestClf[clfName], X, Y, test_size=0.3)
+        log("customize logloss: ",self._bestLoglossDict[clfName])
+        self.report(random_search.grid_scores_, clfName)
         
         random_search.best_params_
         
