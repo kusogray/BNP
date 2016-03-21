@@ -111,8 +111,9 @@ if __name__ == '__main__':
     fab = ModelFactory()
     fab._gridSearchFlag = True
     fab._singleModelMail = True
+    fab._custRandomSearchFlag = True
     fab._subFolderName = expInfo
-    fab._n_iter_search = 1
+    fab._n_iter_search =1
     fab._expInfo = expInfo
     clf = fab.getExtraTressClf(train, target, None)
     

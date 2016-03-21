@@ -17,6 +17,7 @@ from BNP.DataCollector.DataReader import DataReader as DataReader
 
 import numpy as np
 import pandas as pd
+import ast
 from operator import itemgetter
 from random import randint
 import random
@@ -35,6 +36,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
+from sklearn.grid_search import ParameterSampler
 from ctypes.test import test_sizes
 
 class ModelFactory(object):
@@ -49,6 +51,7 @@ class ModelFactory(object):
     _setXgboostTheradToOne = False
     _onlyTreeBasedModels = False
     _singleModelMail = False
+    _custRandomSearchFlag = False
     
     _bestScoreDict = {}
     _bestLoglossDict = {}
@@ -142,35 +145,61 @@ class ModelFactory(object):
     
     
     def doCustRandomSearch(self, clfName, clf, param_dist, X, Y):
-    
+        start = time.time()
+        scoreList =[]
+        bestClf = None
+        n_iter = self._n_iter_search
+        minScore = sys.float_info.max
+        
+        for i in range(0, n_iter):
+            #1. get param
+            paramSample = ast.literal_eval(str(list(ParameterSampler(param_dist, n_iter=1)))[1:-1])
+            clf.set_params(**paramSample)
+            tmpScore = self.validation(clf, X, Y, test_size=0.3)
+            log("Customized Random Search: ",i+1, "/"+str(n_iter), ", tmpScore: ", tmpScore, ", minScore: ", minScore)
+            log("Parameters: ", paramSample)
+            scoreList.append(tmpScore)
+            if tmpScore <minScore:
+                log("updated min score with: " , tmpScore)
+                minScore = tmpScore
+                clf.fit(X,Y)
+                bestClf = clf
+        
+        
+        log("Customized Random Search cost: ", time.time() - start , " sec")        
+        return bestClf
         
     def doRandomSearch(self, clfName, clf, param_dist, X, Y):
-        start = time.time()
-        multiCores = -1
-        if  clfName == "Logistic_Regression": 
-            multiCores = 1
-        if self._setXgboostTheradToOne == True and clfName =="Xgboost":
-            multiCores = 1
+        
+        if self._custRandomSearchFlag == True:
+            return self.doCustRandomSearch(clfName, clf, param_dist, X, Y)
+        else:
+            start = time.time()
+            multiCores = -1
+            if  clfName == "Logistic_Regression": 
+                multiCores = 1
+            if self._setXgboostTheradToOne == True and clfName =="Xgboost":
+                multiCores = 1
+                
+            random_search = RandomizedSearchCV(clf, param_distributions=param_dist,
+                                   n_iter=self._n_iter_search, n_jobs=multiCores, scoring='log_loss'
+                                   ,verbose=10)
             
-        random_search = RandomizedSearchCV(clf, param_distributions=param_dist,
-                               n_iter=self._n_iter_search, n_jobs=multiCores, scoring='log_loss'
-                               ,verbose=10)
+            
+            random_search.fit(X, Y)
+            log(clfName + " randomized search cost: " , time.time() - start , " sec")
+            self._bestClf[clfName] = random_search.best_estimator_
+            #self._bestLoglossDict[clfName] = self.getLogloss(self._bestClf[clfName], X, Y)
+            self._bestLoglossDict[clfName] = self.validation(self._bestClf[clfName], X, Y, test_size=0.3)
+            log("customize logloss: ",self._bestLoglossDict[clfName])
+            self.report(random_search.grid_scores_, clfName)
+            
+            random_search.best_params_
+            
+            dumpModel(random_search.best_estimator_, clfName, self._expInfo, self._subFolderName)
+            self._lastRandomSearchBestParam = random_search.best_params_
         
-        
-        random_search.fit(X, Y)
-        log(clfName + " randomized search cost: " , time.time() - start , " sec")
-        self._bestClf[clfName] = random_search.best_estimator_
-        #self._bestLoglossDict[clfName] = self.getLogloss(self._bestClf[clfName], X, Y)
-        self._bestLoglossDict[clfName] = self.validation(self._bestClf[clfName], X, Y, test_size=0.3)
-        log("customize logloss: ",self._bestLoglossDict[clfName])
-        self.report(random_search.grid_scores_, clfName)
-        
-        random_search.best_params_
-        
-        dumpModel(random_search.best_estimator_, clfName, self._expInfo, self._subFolderName)
-        self._lastRandomSearchBestParam = random_search.best_params_
-        
-        return random_search.best_estimator_
+            return random_search.best_estimator_
     
     # # 1. Random Forest
     def getRandomForestClf(self, X, Y, param_list):
