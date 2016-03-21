@@ -165,7 +165,7 @@ class ModelFactory(object):
                 clf.fit(X,Y)
                 bestClf = clf
         
-        
+        log("Customized Random Search Min Score: ", minScore)        
         log("Customized Random Search cost: ", time.time() - start , " sec")        
         return bestClf
         

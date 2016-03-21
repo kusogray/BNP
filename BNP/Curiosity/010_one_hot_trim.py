@@ -46,16 +46,16 @@ if __name__ == '__main__':
     dr.readInCSV(testPath, "test")
     #dr.doSample(0.2)
     
-    numTest =100
+    numTest =8000
     train = dr._trainDataFrame
     target = dr._ansDataFrame
     test = dr._testDataFrame
     id_test = dr._testIdDf
     
-#     train = dr._trainDataFrame[:numTest]
-#     target = dr._ansDataFrame[:numTest]
-#     test = dr._testDataFrame[:numTest]
-#     id_test = dr._testIdDf[:numTest]
+    train = dr._trainDataFrame[:numTest]
+    target = dr._ansDataFrame[:numTest]
+    test = dr._testDataFrame[:numTest]
+    id_test = dr._testIdDf[:numTest]
     
     train = train.drop(['v8','v23','v25','v36','v37','v46','v51','v53','v54','v63','v73','v75','v79','v81','v82','v89','v92','v95','v105','v107','v108','v109','v110','v116','v117','v118','v119','v123','v124','v128'],axis=1)
     test = test.drop(['v8','v23','v25','v36','v37','v46','v51','v53','v54','v63','v73','v75','v79','v81','v82','v89','v92','v95','v105','v107','v108','v109','v110','v116','v117','v118','v119','v123','v124','v128'],axis=1)
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     fab._singleModelMail = True
     fab._custRandomSearchFlag = True
     fab._subFolderName = expInfo
-    fab._n_iter_search =1
+    fab._n_iter_search =3
     fab._expInfo = expInfo
     clf = fab.getExtraTressClf(train, target, None)
     
