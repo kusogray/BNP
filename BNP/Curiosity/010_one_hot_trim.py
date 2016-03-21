@@ -46,7 +46,7 @@ if __name__ == '__main__':
     dr.readInCSV(testPath, "test")
     #dr.doSample(0.2)
     
-    numTest =8000
+    numTest =80
     train = dr._trainDataFrame
     target = dr._ansDataFrame
     test = dr._testDataFrame

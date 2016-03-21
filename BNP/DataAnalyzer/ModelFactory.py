@@ -150,6 +150,7 @@ class ModelFactory(object):
         bestClf = None
         n_iter = self._n_iter_search
         minScore = sys.float_info.max
+        bestParam = None
         
         for i in range(0, n_iter):
             #1. get param
@@ -164,9 +165,16 @@ class ModelFactory(object):
                 minScore = tmpScore
                 clf.fit(X,Y)
                 bestClf = clf
+                bestParam = paramSample
         
         log("Customized Random Search Min Score: ", minScore)        
-        log("Customized Random Search cost: ", time.time() - start , " sec")        
+        log("Customized Random Search cost: ", time.time() - start , " sec")     
+        
+        mailContent =  "Customized Random Search Min Score: " + str( minScore) + "\n"
+        mailContent = mailContent + "cost: " + str(time.time() - start) + " sec" + "\n"
+        mailContent = mailContent + "bestParam: " + str(bestParam)
+        
+        mail("Customized Random Search Single Model Done: ", clfName , ", ", mailContent)  
         return bestClf
         
     def doRandomSearch(self, clfName, clf, param_dist, X, Y):
