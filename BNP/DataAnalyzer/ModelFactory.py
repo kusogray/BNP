@@ -27,6 +27,7 @@ from scipy.stats import uniform as sp_randf
 from sklearn.externals import joblib
 import os
 import sys
+import copy
 
 #http://docs.scipy.org/doc/numpy/reference/routines.random.html
 
@@ -152,6 +153,7 @@ class ModelFactory(object):
         minScore = sys.float_info.max
         bestParam = None
         
+        log("Customized Random Search Start...")     
         for i in range(0, n_iter):
             #1. get param
             paramSample = ast.literal_eval(str(list(ParameterSampler(param_dist, n_iter=1)))[1:-1])
@@ -164,7 +166,7 @@ class ModelFactory(object):
                 log("updated min score with: " , tmpScore)
                 minScore = tmpScore
                 clf.fit(X,Y)
-                bestClf = clf
+                bestClf =copy.copy(clf)
                 bestParam = paramSample
         
         log("Customized Random Search Min Score: ", minScore)        
