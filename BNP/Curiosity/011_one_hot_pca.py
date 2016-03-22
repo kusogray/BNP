@@ -105,12 +105,7 @@ if __name__ == '__main__':
     X.to_csv(_basePath+"full_train.csv")
     test.to_csv(_basePath + "full_test.csv")
     
-    samplePercent = 0.2
-    sampleRows = np.random.choice(X.index, len(X)*samplePercent) 
-    train_sample  =  X.ix[sampleRows]
-    ans_sample = Y.ix[sampleRows]
-    
-    train_sample.to_csv(_basePath+"sample_train.csv")
+   
     
     log("start training...")
     
